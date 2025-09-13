@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../shared/models/question.dart';
 import '../../../shared/widgets/swipeable_card.dart';
 import '../domain/question_provider.dart';
+import '../../analysis/personality_analyzer.dart';
 
 class SwipeScreen extends ConsumerStatefulWidget {
   const SwipeScreen({super.key});
@@ -155,63 +156,102 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
   }
 
   Widget _buildAnalysisResults() {
-    final excitedCount = responses.where((r) => r['is_excited'] == true).length;
-    final notExcitedCount = responses.length - excitedCount;
-
-    final excitedQuestions = responses
-        .where((r) => r['is_excited'] == true)
-        .map((r) => r['question'] as Question)
-        .toList();
-
-    final categoryCount = <String, int>{};
-    double totalGrowthScore = 0;
-
-    for (final question in excitedQuestions) {
-      categoryCount[question.category] = (categoryCount[question.category] ?? 0) + 1;
-      totalGrowthScore += question.growthScore;
-    }
-
-    final avgGrowthScore = excitedQuestions.isEmpty ? 0.0 : totalGrowthScore / excitedQuestions.length;
+    // PersonalityAnalyzerを使用して深い分析を実行
+    final analysisResult = PersonalityAnalyzer.analyze(responses);
+    final personalityType = PersonalityAnalyzer.personalityTypes[analysisResult.personalityType];
 
     return ListView(
       children: [
+        // パーソナリティタイプカード
         Card(
+          color: Theme.of(context).colorScheme.primaryContainer,
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.psychology,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 28,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'あなたのタイプ',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
                 Text(
-                  '基本統計',
-                  style: Theme.of(context).textTheme.titleLarge,
+                  personalityType?.name ?? '分析中...',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                Text('ワクワクした: $excitedCount個'),
-                Text('ワクワクしなかった: $notExcitedCount個'),
-                Text('成長スコア平均: ${avgGrowthScore.toStringAsFixed(2)}'),
+                Text(
+                  personalityType?.description ?? '',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                if (personalityType != null) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Wrap(
+                    spacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.xs,
+                    children: personalityType.traits.map((trait) => Chip(
+                      label: Text(trait),
+                      backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                    )).toList(),
+                  ),
+                ],
               ],
             ),
           ),
         ),
         const SizedBox(height: AppSpacing.md),
+        // 価値観カード
         Card(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'カテゴリー別傾向',
-                  style: Theme.of(context).textTheme.titleLarge,
+                Row(
+                  children: [
+                    Icon(
+                      Icons.star,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'あなたの価値観',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                ...categoryCount.entries.map((entry) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
+                const SizedBox(height: AppSpacing.md),
+                ...analysisResult.primaryValues.map((value) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(_getCategoryLabel(entry.key)),
-                      Text('${entry.value}個'),
+                      Icon(
+                        Icons.check_circle,
+                        color: Theme.of(context).colorScheme.secondary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          value,
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                      ),
                     ],
                   ),
                 )),
@@ -220,20 +260,141 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
+        // 洞察カード
         Card(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'あなたの傾向',
-                  style: Theme.of(context).textTheme.titleLarge,
+                Row(
+                  children: [
+                    Icon(
+                      Icons.lightbulb,
+                      color: Theme.of(context).colorScheme.tertiary,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      '洞察',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(_getPersonalityAnalysis(avgGrowthScore, categoryCount)),
+                const SizedBox(height: AppSpacing.md),
+                ...analysisResult.insights.map((insight) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: Text(
+                    insight,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                )),
               ],
             ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // 推奨アクションカード
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.rocket_launch,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      '次のステップ',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ...analysisResult.recommendations.asMap().entries.map((entry) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.errorContainer,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${entry.key + 1}',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onErrorContainer,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          entry.value,
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // スコア詳細カード（折りたたみ可能）
+        Card(
+          child: ExpansionTile(
+            title: Text(
+              '詳細スコア',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '基本統計',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text('回答数: ${analysisResult.responseCount}'),
+                    Text('ワクワク: ${analysisResult.excitedCount} (${(analysisResult.excitedCount * 100 / analysisResult.responseCount).toStringAsFixed(0)}%)'),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      '自己決定理論スコア',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    _buildScoreBar('自律性', analysisResult.sdtScores['autonomy']!),
+                    _buildScoreBar('有能感', analysisResult.sdtScores['competence']!),
+                    _buildScoreBar('関係性', analysisResult.sdtScores['relatedness']!),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'ikigaiスコア',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    _buildScoreBar('好きなこと', analysisResult.ikigaiScores['love']!),
+                    _buildScoreBar('得意なこと', analysisResult.ikigaiScores['goodAt']!),
+                    _buildScoreBar('世界が求める', analysisResult.ikigaiScores['worldNeeds']!),
+                    _buildScoreBar('報酬になる', analysisResult.ikigaiScores['paidFor']!),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -256,23 +417,35 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
     }
   }
 
-  String _getPersonalityAnalysis(double avgGrowthScore, Map<String, int> categoryCount) {
-    String analysis = '';
-
-    if (avgGrowthScore >= 0.7) {
-      analysis += '成長志向が非常に強く、常に自分を高めたいと考えています。';
-    } else if (avgGrowthScore >= 0.5) {
-      analysis += 'バランスの取れた成長意識を持っています。';
-    } else {
-      analysis += '楽しみを重視する傾向があります。';
-    }
-
-    if (categoryCount.isNotEmpty) {
-      final topCategory = categoryCount.entries.reduce((a, b) => a.value > b.value ? a : b);
-      analysis += '\n\n特に「${_getCategoryLabel(topCategory.key)}」への関心が高いようです。';
-    }
-
-    return analysis;
+  // スコアバーを表示するウィジェット
+  Widget _buildScoreBar(String label, double score) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label),
+              Text('${(score * 100).toStringAsFixed(0)}%'),
+            ],
+          ),
+          const SizedBox(height: 4),
+          LinearProgressIndicator(
+            value: score,
+            backgroundColor: Colors.grey[300],
+            valueColor: AlwaysStoppedAnimation<Color>(
+              score > 0.7
+                  ? Colors.green
+                  : score > 0.4
+                      ? Colors.orange
+                      : Colors.red,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

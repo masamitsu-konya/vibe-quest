@@ -71,19 +71,17 @@ class SwipeableCard extends StatelessWidget {
                     overflow: TextOverflow.visible,  // オーバーフローを表示
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: 40),  // メインテキストとタグの間隔を40pxに
                 Wrap(
                   spacing: AppSpacing.sm,
-                  children: question.tags.map((tag) => Chip(
-                    label: Text(
-                      '#$tag',
-                      style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontSize: 12,
-                      ),
+                  runSpacing: AppSpacing.xs,
+                  children: question.tags.map((tag) => Text(
+                    '#$tag',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.95),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
-                    backgroundColor: Colors.white.withOpacity(0.9),
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
                   )).toList(),
                 ),
               ],
