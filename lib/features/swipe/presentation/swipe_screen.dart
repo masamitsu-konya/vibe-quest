@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:appinio_swiper/appinio_swiper.dart';
@@ -26,21 +27,38 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
     _loadQuestions();
   }
 
-  Future<void> _loadQuestions() async {
+  Future<void> _loadQuestions({bool append = false}) async {
     try {
+      // まず全質問を取得してクライアント側でランダムに選択
       final response = await ref
           .read(supabaseClientProvider)
           .from('questions')
-          .select()
-          .limit(50);
+          .select();
+
+      // クライアント側でシャッフルして50問選択
+      final random = Random();
+      final allQuestions = (response as List)
+          .map((json) => Question.fromJson(json))
+          .toList();
+      allQuestions.shuffle(random);
+
+      // 50問だけ取得
+      final questionsList = allQuestions.take(50).toList();
 
       setState(() {
-        questions = (response as List)
-            .map((json) => Question.fromJson(json))
-            .toList();
+        if (append) {
+          // 既存の質問に追加
+          questions.addAll(questionsList);
+        } else {
+          // 新規に設定
+          questions = questionsList;
+        }
         isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Error loading questions: $e');
+      print('Stack trace: $stackTrace');
+
       setState(() {
         isLoading = false;
       });
@@ -49,7 +67,8 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('質問の読み込みに失敗しました: $e'),
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 5),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -63,7 +82,7 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
+        height: MediaQuery.of(context).size.height * 0.95,
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -81,36 +100,41 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              Column(
-                children: [
-                  Text(
-                    '分析結果',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '回答数: ${responses.length}個',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  if (responses.length < 30)
-                    Text(
-                      '※回答が増えるほど分析精度が向上します',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
               Expanded(
-                child: _buildAnalysisResults(),
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // ヘッダー情報をスクロール可能エリアに含める
+                      Text(
+                        '分析結果',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        '回答数: ${responses.length}個',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      if (responses.length < 30)
+                        Text(
+                          '※回答が増えるほど分析精度が向上します',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      const SizedBox(height: AppSpacing.lg),
+                      // 分析結果コンテンツ
+                      _buildAnalysisResults(),
+                    ],
+                  ),
+                ),
               ),
               // 回答数に応じてボタンを表示
               if (responses.length < questions.length)
                 Column(
                   children: [
+                    const SizedBox(height: AppSpacing.md),  // ボタン上部に16pxのマージン追加
                     ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);
@@ -160,7 +184,7 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
     final analysisResult = PersonalityAnalyzer.analyze(responses);
     final personalityType = PersonalityAnalyzer.personalityTypes[analysisResult.personalityType];
 
-    return ListView(
+    return Column(
       children: [
         // パーソナリティタイプカード
         Card(
@@ -516,6 +540,12 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
                                     'is_excited': isExcited,
                                     'timestamp': DateTime.now(),
                                   });
+
+                                  // 残り10問になったら次の50問を自動取得
+                                  final remainingQuestions = questions.length - responses.length;
+                                  if (remainingQuestions == 10 && !isLoading) {
+                                    _loadQuestions(append: true);
+                                  }
 
                                   // 10個スワイプするごと、または全てのカードをスワイプしたら結果を表示
                                   if (responses.length % 10 == 0 || targetIndex >= questions.length) {
