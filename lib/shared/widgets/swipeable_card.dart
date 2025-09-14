@@ -53,7 +53,7 @@ class SwipeableCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
                 Text(
-                  _getCategoryEmoji(question.category),
+                  question.emoji,
                   style: const TextStyle(fontSize: 48),
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -89,38 +89,4 @@ class SwipeableCard extends StatelessWidget {
         );
   }
 
-  String _getCategoryEmoji(String category) {
-    switch (category) {
-      case QuestionCategory.health:
-        return '❤️';
-      case QuestionCategory.career:
-        return '💼';
-      case QuestionCategory.hobby:
-        return '🎨';
-      case QuestionCategory.learning:
-        return '📚';
-      case QuestionCategory.relationship:
-        return '👥';
-      case QuestionCategory.lifestyle:
-        return '🏠';
-      case QuestionCategory.finance:
-        return '💰';
-      case QuestionCategory.creativity:
-        return '💡';
-      case QuestionCategory.sports:
-        return '⚽';
-      case QuestionCategory.travel:
-        return '✈️';
-      case 'adventure':
-        return '🚀';
-      case 'service':
-        return '🤝';
-      case 'mindfulness':
-        return '🧘';
-      case 'entertainment':
-        return '🎬';
-      default:
-        return '⭐';
-    }
-  }
 }

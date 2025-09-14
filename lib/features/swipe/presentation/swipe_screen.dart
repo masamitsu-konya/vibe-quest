@@ -1,11 +1,10 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:appinio_swiper/appinio_swiper.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/models/question.dart';
 import '../../../shared/widgets/swipeable_card.dart';
-import '../domain/question_provider.dart';
+import '../../../data/questions_data.dart';
 import '../../analysis/personality_analyzer.dart';
 
 class SwipeScreen extends ConsumerStatefulWidget {
@@ -29,21 +28,8 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
 
   Future<void> _loadQuestions({bool append = false}) async {
     try {
-      // まず全質問を取得してクライアント側でランダムに選択
-      final response = await ref
-          .read(supabaseClientProvider)
-          .from('questions')
-          .select();
-
-      // クライアント側でシャッフルして50問選択
-      final random = Random();
-      final allQuestions = (response as List)
-          .map((json) => Question.fromJson(json))
-          .toList();
-      allQuestions.shuffle(random);
-
-      // 50問だけ取得
-      final questionsList = allQuestions.take(50).toList();
+      // アプリ内データからランダムに50問取得
+      final questionsList = QuestionsData.getRandomQuestions(50);
 
       setState(() {
         if (append) {
@@ -145,32 +131,7 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
                       ),
                       child: const Text('さらに続ける'),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        setState(() {
-                          responses.clear();
-                        });
-                        _loadQuestions();
-                      },
-                      child: const Text('最初からやり直す'),
-                    ),
                   ],
-                )
-              else
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    setState(() {
-                      responses.clear();
-                    });
-                    _loadQuestions();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                  child: const Text('もう一度チャレンジ'),
                 ),
             ],
           ),
@@ -189,6 +150,7 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
         // パーソナリティタイプカード
         Card(
           color: Theme.of(context).colorScheme.primaryContainer,
+          elevation: 0,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
@@ -241,6 +203,7 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
         const SizedBox(height: AppSpacing.md),
         // 価値観カード
         Card(
+          elevation: 0,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
@@ -286,6 +249,7 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
         const SizedBox(height: AppSpacing.md),
         // 洞察カード
         Card(
+          elevation: 0,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
@@ -319,6 +283,7 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
         const SizedBox(height: AppSpacing.md),
         // 推奨アクションカード
         Card(
+          elevation: 0,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
@@ -378,6 +343,7 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
         const SizedBox(height: AppSpacing.md),
         // スコア詳細カード（折りたたみ可能）
         Card(
+          elevation: 0,
           child: ExpansionTile(
             title: Text(
               '詳細スコア',

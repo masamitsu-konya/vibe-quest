@@ -2,6 +2,7 @@ class Question {
   final String id;
   final String text;
   final String category;
+  final String emoji;  // 絵文字を追加
   final double growthScore;
   final List<String> tags;
   final String? imageUrl;
@@ -31,6 +32,7 @@ class Question {
     required this.id,
     required this.text,
     required this.category,
+    required this.emoji,
     required this.growthScore,
     required this.tags,
     this.imageUrl,
@@ -54,6 +56,7 @@ class Question {
       id: json['id'] as String,
       text: json['text'] as String,
       category: json['category'] as String,
+      emoji: json['emoji'] as String? ?? '⭐',
       growthScore: (json['growth_score'] as num).toDouble(),
       tags: List<String>.from(json['tags'] ?? []),
       imageUrl: json['image_url'] as String?,
@@ -78,6 +81,7 @@ class Question {
       'id': id,
       'text': text,
       'category': category,
+      'emoji': emoji,
       'growth_score': growthScore,
       'tags': tags,
       'image_url': imageUrl,
