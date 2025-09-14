@@ -14,11 +14,15 @@ class SwipeScreen extends ConsumerStatefulWidget {
   ConsumerState<SwipeScreen> createState() => _SwipeScreenState();
 }
 
-class _SwipeScreenState extends ConsumerState<SwipeScreen> {
+class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProviderStateMixin {
   final AppinioSwiperController controller = AppinioSwiperController();
   List<Question> questions = [];
   List<Map<String, dynamic>> responses = [];
   bool isLoading = true;
+
+  // スワイプ進捗を管理する変数
+  double swipeProgress = 0.0;
+  bool isSwipingRight = false;
 
   @override
   void initState() {
@@ -487,12 +491,31 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
                             child: AppinioSwiper(
                               controller: controller,
                               cardCount: questions.length,
+                              threshold: 100,  // デフォルト50から100に増やして、より大きくスワイプが必要に
                               cardBuilder: (BuildContext context, int index) {
                                 return SwipeableCard(
                                   question: questions[index],
                                 );
                               },
+                              onCardPositionChanged: (SwiperPosition position) {
+                                // カードの位置に基づいてスワイプ進捗を計算
+                                setState(() {
+                                  // 水平方向のオフセットを基にスワイプの進捗を計算
+                                  double horizontalOffset = position.offset.dx;
+
+                                  // スワイプの方向を判定
+                                  isSwipingRight = horizontalOffset > 0;
+
+                                  // 進捗を0.0から1.0の範囲に正規化
+                                  // 150ピクセルのスワイプで最大スケールに達するように設定
+                                  swipeProgress = (horizontalOffset.abs() / 150).clamp(0.0, 1.0);
+                                });
+                              },
                               onSwipeEnd: (int previousIndex, int targetIndex, SwiperActivity activity) {
+                                // スワイプ終了時に進捗をリセット
+                                setState(() {
+                                  swipeProgress = 0.0;
+                                });
                                 if (previousIndex < questions.length) {
                                   final question = questions[previousIndex];
                                   // Swipeアクティビティの場合、directionを確認
@@ -527,48 +550,135 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> {
                             ),
                           ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.red,
-                            size: 30,
-                          ),
+              SizedBox(
+                height: 120, // 固定の高さを設定
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // 左スワイプ（ワクワクしない）ボタン
+                      SizedBox(
+                        width: 100, // 固定幅
+                        height: 100, // 固定高さ
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            AnimatedScale(
+                              scale: !isSwipingRight && swipeProgress > 0
+                                  ? 1.0 + (swipeProgress * 0.3)  // 左スワイプ時は最大1.3倍
+                                  : 1.0,
+                              duration: const Duration(milliseconds: 100),
+                              child: AnimatedOpacity(
+                                opacity: !isSwipingRight && swipeProgress > 0
+                                    ? 0.7 + (swipeProgress * 0.3)  // 透明度も変化
+                                    : 0.7,
+                                duration: const Duration(milliseconds: 100),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(AppSpacing.md),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.withOpacity(
+                                          0.1 + (!isSwipingRight && swipeProgress > 0 ? swipeProgress * 0.2 : 0)
+                                        ),
+                                        shape: BoxShape.circle,
+                                        boxShadow: !isSwipingRight && swipeProgress > 0
+                                            ? [
+                                                BoxShadow(
+                                                  color: Colors.red.withOpacity(0.3 * swipeProgress),
+                                                  blurRadius: 10 * swipeProgress,
+                                                  spreadRadius: 2 * swipeProgress,
+                                                )
+                                              ]
+                                            : [],
+                                      ),
+                                      child: Icon(
+                                        Icons.close,
+                                        color: Colors.red,
+                                        size: 30,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.sm),
+                                    Text(
+                                      'ワクワクしない',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: !isSwipingRight && swipeProgress > 0.5
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: AppSpacing.sm),
-                        const Text('ワクワクしない'),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.favorite,
-                            color: Colors.green,
-                            size: 30,
-                          ),
+                      ),
+                      // 右スワイプ（ワクワクする）ボタン
+                      SizedBox(
+                        width: 100, // 固定幅
+                        height: 100, // 固定高さ
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            AnimatedScale(
+                              scale: isSwipingRight && swipeProgress > 0
+                                  ? 1.0 + (swipeProgress * 0.3)  // 右スワイプ時は最大1.3倍
+                                  : 1.0,
+                              duration: const Duration(milliseconds: 100),
+                              child: AnimatedOpacity(
+                                opacity: isSwipingRight && swipeProgress > 0
+                                    ? 0.7 + (swipeProgress * 0.3)  // 透明度も変化
+                                    : 0.7,
+                                duration: const Duration(milliseconds: 100),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(AppSpacing.md),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withOpacity(
+                                          0.1 + (isSwipingRight && swipeProgress > 0 ? swipeProgress * 0.2 : 0)
+                                        ),
+                                        shape: BoxShape.circle,
+                                        boxShadow: isSwipingRight && swipeProgress > 0
+                                            ? [
+                                                BoxShadow(
+                                                  color: Colors.green.withOpacity(0.3 * swipeProgress),
+                                                  blurRadius: 10 * swipeProgress,
+                                                  spreadRadius: 2 * swipeProgress,
+                                                )
+                                              ]
+                                            : [],
+                                      ),
+                                      child: Icon(
+                                        Icons.favorite,
+                                        color: Colors.green,
+                                        size: 30,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.sm),
+                                    Text(
+                                      'ワクワクする',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: isSwipingRight && swipeProgress > 0.5
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: AppSpacing.sm),
-                        const Text('ワクワクする'),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

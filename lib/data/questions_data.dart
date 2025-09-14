@@ -13657,7 +13657,7 @@ class QuestionsData {
       id: '650',
       text: 'クライミングで限界挑戦',
       category: 'sports',
-      emoji: '⚽',
+      emoji: '🧗',
       tags: ['クライミング', '限界', '挑戦'],
       growthScore: 0.87,
       sdtAutonomy: 0.85,
