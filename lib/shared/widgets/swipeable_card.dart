@@ -52,10 +52,9 @@ class SwipeableCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-                Icon(
-                  _getCategoryIcon(question.category),
-                  size: 48,
-                  color: Colors.white.withOpacity(0.9),
+                Text(
+                  _getCategoryEmoji(question.category),
+                  style: const TextStyle(fontSize: 48),
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Flexible(
@@ -90,30 +89,38 @@ class SwipeableCard extends StatelessWidget {
         );
   }
 
-  IconData _getCategoryIcon(String category) {
+  String _getCategoryEmoji(String category) {
     switch (category) {
       case QuestionCategory.health:
-        return Icons.favorite;
+        return '❤️';
       case QuestionCategory.career:
-        return Icons.work;
+        return '💼';
       case QuestionCategory.hobby:
-        return Icons.palette;
+        return '🎨';
       case QuestionCategory.learning:
-        return Icons.school;
+        return '📚';
       case QuestionCategory.relationship:
-        return Icons.people;
+        return '👥';
       case QuestionCategory.lifestyle:
-        return Icons.home;
+        return '🏠';
       case QuestionCategory.finance:
-        return Icons.attach_money;
+        return '💰';
       case QuestionCategory.creativity:
-        return Icons.lightbulb;
+        return '💡';
       case QuestionCategory.sports:
-        return Icons.sports_basketball;
+        return '⚽';
       case QuestionCategory.travel:
-        return Icons.flight;
+        return '✈️';
+      case 'adventure':
+        return '🚀';
+      case 'service':
+        return '🤝';
+      case 'mindfulness':
+        return '🧘';
+      case 'entertainment':
+        return '🎬';
       default:
-        return Icons.star;
+        return '⭐';
     }
   }
 }
