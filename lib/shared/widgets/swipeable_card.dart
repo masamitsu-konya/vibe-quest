@@ -52,10 +52,9 @@ class SwipeableCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-                Icon(
-                  _getCategoryIcon(question.category),
-                  size: 48,
-                  color: Colors.white.withOpacity(0.9),
+                Text(
+                  question.emoji,
+                  style: const TextStyle(fontSize: 48),
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Flexible(
@@ -71,19 +70,17 @@ class SwipeableCard extends StatelessWidget {
                     overflow: TextOverflow.visible,  // オーバーフローを表示
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: 40),  // メインテキストとタグの間隔を40pxに
                 Wrap(
                   spacing: AppSpacing.sm,
-                  children: question.tags.map((tag) => Chip(
-                    label: Text(
-                      '#$tag',
-                      style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontSize: 12,
-                      ),
+                  runSpacing: AppSpacing.xs,
+                  children: question.tags.map((tag) => Text(
+                    '#$tag',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.95),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
-                    backgroundColor: Colors.white.withOpacity(0.9),
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
                   )).toList(),
                 ),
               ],
@@ -92,30 +89,4 @@ class SwipeableCard extends StatelessWidget {
         );
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case QuestionCategory.health:
-        return Icons.favorite;
-      case QuestionCategory.career:
-        return Icons.work;
-      case QuestionCategory.hobby:
-        return Icons.palette;
-      case QuestionCategory.learning:
-        return Icons.school;
-      case QuestionCategory.relationship:
-        return Icons.people;
-      case QuestionCategory.lifestyle:
-        return Icons.home;
-      case QuestionCategory.finance:
-        return Icons.attach_money;
-      case QuestionCategory.creativity:
-        return Icons.lightbulb;
-      case QuestionCategory.sports:
-        return Icons.sports_basketball;
-      case QuestionCategory.travel:
-        return Icons.flight;
-      default:
-        return Icons.star;
-    }
-  }
 }

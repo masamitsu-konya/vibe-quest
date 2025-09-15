@@ -55,12 +55,12 @@ CREATE TABLE IF NOT EXISTS avoid_list (
 );
 
 -- Create indexes for better performance
-CREATE INDEX idx_questions_category ON questions(category);
-CREATE INDEX idx_questions_growth_score ON questions(growth_score);
-CREATE INDEX idx_user_responses_user_id ON user_responses(user_id);
-CREATE INDEX idx_user_responses_question_id ON user_responses(question_id);
-CREATE INDEX idx_habits_user_id ON habits(user_id);
-CREATE INDEX idx_avoid_list_user_id ON avoid_list(user_id);
+CREATE INDEX IF NOT EXISTS idx_questions_category ON questions(category);
+CREATE INDEX IF NOT EXISTS idx_questions_growth_score ON questions(growth_score);
+CREATE INDEX IF NOT EXISTS idx_user_responses_user_id ON user_responses(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_responses_question_id ON user_responses(question_id);
+CREATE INDEX IF NOT EXISTS idx_habits_user_id ON habits(user_id);
+CREATE INDEX IF NOT EXISTS idx_avoid_list_user_id ON avoid_list(user_id);
 
 -- Enable Row Level Security
 ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
@@ -70,62 +70,76 @@ ALTER TABLE habits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE avoid_list ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for questions (everyone can read)
+DROP POLICY IF EXISTS "Questions are viewable by everyone" ON questions;
 CREATE POLICY "Questions are viewable by everyone"
   ON questions FOR SELECT
   USING (true);
 
 -- Create policies for user_responses (users can only access their own)
+DROP POLICY IF EXISTS "Users can view own responses" ON user_responses;
 CREATE POLICY "Users can view own responses"
   ON user_responses FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own responses" ON user_responses;
 CREATE POLICY "Users can insert own responses"
   ON user_responses FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own responses" ON user_responses;
 CREATE POLICY "Users can update own responses"
   ON user_responses FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Create policies for user_profiles
+DROP POLICY IF EXISTS "Users can view own profile" ON user_profiles;
 CREATE POLICY "Users can view own profile"
   ON user_profiles FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON user_profiles;
 CREATE POLICY "Users can insert own profile"
   ON user_profiles FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON user_profiles;
 CREATE POLICY "Users can update own profile"
   ON user_profiles FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Create policies for habits
+DROP POLICY IF EXISTS "Users can view own habits" ON habits;
 CREATE POLICY "Users can view own habits"
   ON habits FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own habits" ON habits;
 CREATE POLICY "Users can insert own habits"
   ON habits FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own habits" ON habits;
 CREATE POLICY "Users can update own habits"
   ON habits FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own habits" ON habits;
 CREATE POLICY "Users can delete own habits"
   ON habits FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Create policies for avoid_list
+DROP POLICY IF EXISTS "Users can view own avoid list" ON avoid_list;
 CREATE POLICY "Users can view own avoid list"
   ON avoid_list FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert to own avoid list" ON avoid_list;
 CREATE POLICY "Users can insert to own avoid list"
   ON avoid_list FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete from own avoid list" ON avoid_list;
 CREATE POLICY "Users can delete from own avoid list"
   ON avoid_list FOR DELETE
   USING (auth.uid() = user_id);
