@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// 課金状態を管理するProvider
 final purchaseServiceProvider = StateNotifierProvider<PurchaseService, PurchaseState>((ref) {
@@ -33,7 +35,16 @@ class PurchaseState {
 
 /// 課金サービス
 class PurchaseService extends StateNotifier<PurchaseState> {
-  static const String _revenueCatApiKey = 'YOUR_REVENUECAT_API_KEY'; // 後で設定
+  // RevenueCat APIキー（環境変数から取得）
+  static String get _revenueCatApiKey {
+    if (Platform.isIOS) {
+      return dotenv.env['REVENUECAT_API_KEY_IOS'] ?? '';
+    } else if (Platform.isAndroid) {
+      return dotenv.env['REVENUECAT_API_KEY_ANDROID'] ?? '';
+    }
+    throw UnsupportedError('Unsupported platform');
+  }
+
   static const String _entitlementId = 'premium';
   static const String _productId = 'vibe_quest_premium_500';
 

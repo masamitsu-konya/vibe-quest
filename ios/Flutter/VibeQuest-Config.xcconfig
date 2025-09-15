@@ -1,0 +1,6 @@
+#include "Generated.xcconfig"
+
+// AdMob App ID
+// この値は.envファイルから実行時に設定されます
+// デフォルトはテスト用ID
+ADMOB_APP_ID=ca-app-pub-3940256099942544~1458002511
