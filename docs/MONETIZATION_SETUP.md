@@ -120,24 +120,42 @@ static String get _interstitialAdUnitId {
 2. 「Get Started Free」をクリック
 3. アカウントを作成
 
-### 2. プロジェクトの作成
-1. ダッシュボードで「Create New Project」
-2. プロジェクト名：`Vibe Quest`を入力
-3. 「Create Project」をクリック
+### 2. プロジェクトのセットアップ（新UI）
 
-### 3. アプリの設定
+#### Step 1: プロジェクト作成
+1. サインイン後、プロジェクト名を入力
+2. 「Continue」をクリック
 
-#### iOS App Store設定
-1. 「Set up your app」→「App Store」を選択
-2. Bundle ID：`com.example.vibequest`を入力（実際のBundle IDに変更）
-3. App Store Connect App-Specific Shared Secretを入力（App Store Connectから取得）
+#### Step 2: App Store Connect API Configuration
+1. 「Go to Team Keys」ボタンをクリック
+2. App Store Connectにログイン
+3. **Users and Access** → **Integrations** → **Team Keys**セクションへ移動
+4. 「Request API Access」をクリック（初回のみ）
+5. Team Keysが表示されたら、以下を作成：
+   - 「+」ボタンをクリック
+   - Key Name: `RevenueCat`
+   - Access: `App Manager`
+   - 「Generate」をクリック
+6. 以下の情報をRevenueCatに入力：
+   - Issuer ID（Team Keysページ上部に表示）
+   - Key ID（生成したキーのID）
+   - Private Key（.p8ファイルをダウンロード）
 
-#### Google Play設定
-1. 「Set up your app」→「Play Store」を選択
+#### Step 3: Bundle ID設定
+1. Bundle ID：`com.example.vibequest`を入力（実際のBundle IDに変更）
+2. 「Next」をクリック
+
+#### Google Play設定（Androidの場合）
+1. 「Add another platform」→「Play Store」を選択
 2. パッケージ名：`com.example.vibe_quest`を入力
-3. Google Play Service Account credentialsをアップロード
+3. Google Play Service Account credentialsの設定：
+   - Google Play Consoleにログイン
+   - 「設定」→「APIアクセス」
+   - サービスアカウントを作成
+   - JSONキーをダウンロード
+   - RevenueCatにアップロード
 
-### 4. 商品の作成
+### 3. 商品の作成
 
 #### App Store Connect
 1. App Store Connectにログイン
@@ -159,7 +177,7 @@ static String get _interstitialAdUnitId {
    - 説明：`広告削除とエクスポート機能`
    - デフォルト価格：`¥500`
 
-### 5. RevenueCat設定の続き
+### 4. RevenueCat設定の続き
 
 #### Entitlementの作成
 1. RevenueCatダッシュボードで「Entitlements」をクリック
@@ -180,7 +198,7 @@ static String get _interstitialAdUnitId {
 2. 「Public App-Specific API Keys」セクションを確認
 3. iOS/Android用のAPIキーをコピー
 
-### 6. コード内のAPIキーを更新
+### 5. コード内のAPIキーを更新
 
 **lib/features/monetization/services/purchase_service.dart**を編集：
 
