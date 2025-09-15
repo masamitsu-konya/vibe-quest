@@ -6,6 +6,9 @@ import '../../../shared/models/question.dart';
 import '../../../shared/widgets/swipeable_card.dart';
 import '../../../data/questions_data.dart';
 import '../../analysis/personality_analyzer.dart';
+import '../../actions/presentation/action_recommendations_view.dart';
+import '../../monetization/services/ad_service.dart';
+import '../../monetization/services/purchase_service.dart';
 
 class SwipeScreen extends ConsumerStatefulWidget {
   const SwipeScreen({super.key});
@@ -23,6 +26,9 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
   // スワイプ進捗を管理する変数
   double swipeProgress = 0.0;
   bool isSwipingRight = false;
+
+  // 分析トリガー関連
+  static const int analysisThreshold = 50; // 50個ごとに分析
 
   @override
   void initState() {
@@ -45,9 +51,8 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
         }
         isLoading = false;
       });
-    } catch (e, stackTrace) {
-      print('Error loading questions: $e');
-      print('Stack trace: $stackTrace');
+    } catch (e) {
+      // エラーログは本番環境では表示しない
 
       setState(() {
         isLoading = false;
@@ -67,6 +72,12 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
 
 
   void _showResults() {
+    // プレミアムユーザーでない場合は広告を表示
+    final isPremium = ref.read(purchaseServiceProvider).isPremium;
+    if (!isPremium) {
+      AdService.instance.onBeforeShowingAnalysis();
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -106,11 +117,18 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
                           color: Colors.grey[600],
                         ),
                       ),
-                      if (responses.length < 30)
+                      if (responses.length < analysisThreshold)
+                        Text(
+                          '※最低$analysisThreshold個の回答で分析が開始されます',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      if (responses.length >= analysisThreshold && responses.length < 100)
                         Text(
                           '※回答が増えるほど分析精度が向上します',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
+                            color: Theme.of(context).colorScheme.secondary,
                           ),
                         ),
                       const SizedBox(height: AppSpacing.lg),
@@ -151,6 +169,16 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
 
     return Column(
       children: [
+        // 50個以上回答した場合は行動提案を表示
+        if (responses.length >= analysisThreshold) ...[
+          ActionRecommendationsView(
+            analysisResult: analysisResult,
+            responses: responses,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          const Divider(),
+          const SizedBox(height: AppSpacing.lg),
+        ],
         // パーソナリティタイプカード
         Card(
           color: Theme.of(context).colorScheme.primaryContainer,
@@ -395,21 +423,6 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
     );
   }
 
-  String _getCategoryLabel(String category) {
-    switch (category) {
-      case 'health': return '健康・フィットネス';
-      case 'career': return 'キャリア・仕事';
-      case 'hobby': return '趣味・娯楽';
-      case 'learning': return '学習・自己啓発';
-      case 'relationship': return '人間関係';
-      case 'lifestyle': return 'ライフスタイル';
-      case 'finance': return '金融・投資';
-      case 'creativity': return 'クリエイティブ';
-      case 'sports': return 'スポーツ';
-      case 'travel': return '旅行・冒険';
-      default: return category;
-    }
-  }
 
   // スコアバーを表示するウィジェット
   Widget _buildScoreBar(String label, double score) {
@@ -442,6 +455,67 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
     );
   }
 
+  Widget _buildProgressBar() {
+    final answeredCount = responses.length;
+    final nextAnalysis = ((answeredCount ~/ analysisThreshold) + 1) * analysisThreshold;
+    final progress = (answeredCount % analysisThreshold) / analysisThreshold;
+    final remaining = nextAnalysis - answeredCount;
+
+    return Container(
+      margin: const EdgeInsets.only(top: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '回答数: $answeredCount',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              if (answeredCount < analysisThreshold)
+                Text(
+                  '初回分析まであと$remaining個',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              else
+                Text(
+                  '次の分析まであと$remaining個',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          LinearProgressIndicator(
+            value: progress,
+            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              answeredCount < analysisThreshold
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.secondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -461,20 +535,27 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
             children: [
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
                   children: [
-                    Text(
-                      'Vibe Quest',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Vibe Quest',
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.info_outline),
+                          onPressed: () => _showInstructions(),
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.info_outline),
-                      onPressed: () => _showInstructions(),
-                    ),
+                    // プログレスバー
+                    if (!isLoading && questions.isNotEmpty)
+                      _buildProgressBar(),
                   ],
                 ),
               ),
@@ -530,14 +611,20 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
                                     'timestamp': DateTime.now(),
                                   });
 
+                                  // プレミアムユーザーでない場合は20問ごとに広告表示
+                                  final isPremium = ref.read(purchaseServiceProvider).isPremium;
+                                  if (!isPremium) {
+                                    AdService.instance.onQuestionAnswered();
+                                  }
+
                                   // 残り10問になったら次の50問を自動取得
                                   final remainingQuestions = questions.length - responses.length;
                                   if (remainingQuestions == 10 && !isLoading) {
                                     _loadQuestions(append: true);
                                   }
 
-                                  // 10個スワイプするごと、または全てのカードをスワイプしたら結果を表示
-                                  if (responses.length % 10 == 0 || targetIndex >= questions.length) {
+                                  // 50個スワイプするごと、または全てのカードをスワイプしたら結果を表示
+                                  if (responses.length >= analysisThreshold && responses.length % analysisThreshold == 0) {
                                     Future.delayed(const Duration(milliseconds: 300), () {
                                       _showResults();
                                     });
