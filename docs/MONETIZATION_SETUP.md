@@ -115,121 +115,110 @@ static String get _interstitialAdUnitId {
 
 ## RevenueCat設定
 
-### 1. RevenueCatアカウントの作成
-1. [RevenueCat](https://www.revenuecat.com/)にアクセス
-2. 「Get Started Free」をクリック
-3. アカウントを作成
+### A. iOS（App Store）設定
 
-### 2. プロジェクトのセットアップ（新UI）
-
-#### Step 1: プロジェクト作成
-1. サインイン後、プロジェクト名を入力
-2. 「Continue」をクリック
-
-#### Step 2: App Store Connect API Configuration
-1. 「Go to Team Keys」ボタンをクリック
-2. App Store Connectにログイン
-3. **Users and Access** → **Integrations** → **Team Keys**セクションへ移動
-4. 「Request API Access」をクリック（初回のみ）
-5. Team Keysが表示されたら、以下を作成：
-   - 「+」ボタンをクリック
-   - Key Name: `RevenueCat`
-   - Access: `App Manager`
-   - 「Generate」をクリック
-6. 以下の情報をRevenueCatに入力：
-   - Issuer ID（Team Keysページ上部に表示）
-   - Key ID（生成したキーのID）
-   - Private Key（.p8ファイルをダウンロード）
-
-#### Step 3: Bundle ID設定
-1. Bundle ID：`com.example.vibequest`を入力（実際のBundle IDに変更）
-2. 「Next」をクリック
-
-#### Google Play設定（Androidの場合）
-1. 「Add another platform」→「Play Store」を選択
-2. パッケージ名：`com.example.vibe_quest`を入力
-3. Google Play Service Account credentialsの設定：
-   - Google Play Consoleにログイン
-   - 「設定」→「APIアクセス」
-   - サービスアカウントを作成
-   - JSONキーをダウンロード
-   - RevenueCatにアップロード
-
-### 3. 商品の作成
-
-#### App Store Connect
-1. App Store Connectにログイン
-2. アプリを選択
-3. 「アプリ内課金」→「+」をクリック
-4. 以下の情報で商品を作成：
+#### 1. App Store Connectでの準備
+1. [App Store Connect](https://appstoreconnect.apple.com/)にログイン
+2. アプリを作成または選択
+3. **アプリ内課金**の設定：
+   - 「アプリ内課金」→「+」をクリック
    - 参照名：`Vibe Quest Premium`
    - 製品ID：`vibe_quest_premium_500`
    - タイプ：`非消耗型`
    - 価格：`¥500`
+   - 「保存」をクリック
 
-#### Google Play Console
-1. Google Play Consoleにログイン
-2. アプリを選択
-3. 「収益化」→「アプリ内アイテム」→「商品を作成」
-4. 以下の情報で商品を作成：
+#### 2. App Store Connect API キーの作成
+1. **Users and Access** → **Integrations** → **Team Keys**へ移動
+2. 初回の場合は「Request API Access」をクリック
+3. 「+」ボタンでキーを作成：
+   - Key Name: `RevenueCat`
+   - Access: `App Manager`
+   - 「Generate」をクリック
+4. 以下をメモ：
+   - **Issuer ID**（ページ上部）
+   - **Key ID**（生成されたID）
+   - **Private Key**（.p8ファイルをダウンロード）
+
+#### 3. RevenueCatでiOSアプリを設定
+1. [RevenueCat](https://www.revenuecat.com/)にログイン
+2. プロジェクト作成後、**iOS App Store**を選択
+3. App Store Connect APIの情報を入力：
+   - Issuer ID
+   - Key ID
+   - Private Key（.p8ファイルをアップロード）
+4. Bundle ID：`com.example.vibeQuest`を入力
+5. 「Continue」をクリック
+
+---
+
+### B. Android（Google Play）設定
+
+#### 1. Google Play Consoleでの準備
+1. [Google Play Console](https://play.google.com/console)にログイン
+2. アプリを作成または選択
+3. **アプリ内アイテム**の設定：
+   - 「収益化」→「アプリ内アイテム」→「商品を作成」
    - 商品ID：`vibe_quest_premium_500`
    - 名前：`Vibe Quest Premium`
    - 説明：`広告削除とエクスポート機能`
    - デフォルト価格：`¥500`
+   - 「保存」→「有効化」
 
-### 4. RevenueCat設定の続き
+#### 2. Service Accountの作成
+1. Google Play Console → 「設定」→「APIアクセス」
+2. 「新しいサービスアカウントを作成」をクリック
+3. Google Cloud Consoleが開いたら：
+   - 「サービスアカウントを作成」
+   - 名前：`RevenueCat`
+   - ロール：`Pub/Sub 管理者`
+   - 「キーを作成」→ JSON形式
+   - JSONファイルをダウンロード
+4. Google Play Consoleに戻り、作成したアカウントに権限を付与：
+   - 「財務データ」の権限を有効化
 
-#### Entitlementの作成
+#### 3. RevenueCatでAndroidアプリを設定
+1. RevenueCatダッシュボードで「Add another platform」→「Play Store」
+2. パッケージ名：`com.example.vibe_quest`を入力
+3. Service Account JSONをアップロード
+4. 「Continue」をクリック
+
+---
+
+### C. RevenueCat共通設定
+
+#### 1. Entitlementの作成
 1. RevenueCatダッシュボードで「Entitlements」をクリック
 2. 「+ New」をクリック
-3. Identifier：`premium`を入力
-4. Description：`Premium Features`を入力
-5. 「Add」をクリック
+3. 設定内容：
+   - Identifier：`premium`
+   - Description：`Premium Features`
+4. 「Add」をクリック
 
-#### Offeringの作成
+#### 2. Offeringの作成
 1. 「Offerings」をクリック
 2. 「+ New」をクリック
 3. Identifier：`default`を入力
 4. 「Add」をクリック
-5. 作成したOfferingに商品を追加
+5. 作成したOfferingに両プラットフォームの商品を追加：
+   - iOS: `vibe_quest_premium_500`
+   - Android: `vibe_quest_premium_500`
 
-#### APIキーの取得
+#### 3. APIキーの取得
 1. 「API Keys」をクリック
-2. 「Public App-Specific API Keys」セクションを確認
-3. iOS/Android用のAPIキーをコピー
+2. 「Public App-Specific API Keys」セクションから：
+   - iOS用：`appl_XXXXXXXXXXXXXXXXXXXXXXXXXX`
+   - Android用：`goog_XXXXXXXXXXXXXXXXXXXXXXXXXX`
+3. 両方のキーをコピー
 
-### 5. コード内のAPIキーを更新
-
-**lib/features/monetization/services/purchase_service.dart**を編集：
-
-```dart
-class PurchaseService extends StateNotifier<PurchaseState> {
-  // ここにRevenueCat APIキーを設定
-  static const String _revenueCatApiKey = 'appl_XXXXXXXXXXXXXXXXXXXXXXXXXX'; // iOS用
-  // または
-  static const String _revenueCatApiKey = 'goog_XXXXXXXXXXXXXXXXXXXXXXXXXX'; // Android用
-
-  static const String _entitlementId = 'premium';
-  static const String _productId = 'vibe_quest_premium_500';
-
-  // ...
-}
+#### 4. コードの更新
+環境変数（.env）に追加：
+```env
+REVENUECAT_API_KEY_IOS=appl_XXXXXXXXXXXXXXXXXXXXXXXXXX
+REVENUECAT_API_KEY_ANDROID=goog_XXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
-プラットフォームごとに異なるAPIキーを使用する場合：
-
-```dart
-import 'dart:io';
-
-static String get _revenueCatApiKey {
-  if (Platform.isIOS) {
-    return 'appl_XXXXXXXXXXXXXXXXXXXXXXXXXX';
-  } else if (Platform.isAndroid) {
-    return 'goog_XXXXXXXXXXXXXXXXXXXXXXXXXX';
-  }
-  throw UnsupportedError('Unsupported platform');
-}
-```
+※コードは環境変数から自動的に読み込まれます
 
 ---
 
