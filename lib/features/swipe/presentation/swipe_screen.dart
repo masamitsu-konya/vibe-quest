@@ -8,8 +8,7 @@ import '../../../data/questions_data.dart';
 import '../../analysis/personality_analyzer.dart';
 import '../../actions/presentation/action_recommendations_view.dart';
 import '../../monetization/services/ad_service.dart';
-// import '../../monetization/services/purchase_service.dart';
-import '../../monetization/services/mock_purchase_service.dart'; // 開発中はモック使用
+import '../../monetization/services/purchase_service.dart';
 
 class SwipeScreen extends ConsumerStatefulWidget {
   const SwipeScreen({super.key});
@@ -74,7 +73,7 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
 
   void _showResults() {
     // プレミアムユーザーでない場合は広告を表示
-    final isPremium = ref.read(mockPurchaseServiceProvider).isPremium;
+    final isPremium = ref.read(purchaseServiceProvider).isPremium;
     if (!isPremium) {
       AdService.instance.onBeforeShowingAnalysis();
     }
@@ -613,7 +612,7 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
                                   });
 
                                   // プレミアムユーザーでない場合は20問ごとに広告表示
-                                  final isPremium = ref.read(mockPurchaseServiceProvider).isPremium;
+                                  final isPremium = ref.read(purchaseServiceProvider).isPremium;
                                   if (!isPremium) {
                                     AdService.instance.onQuestionAnswered();
                                   }

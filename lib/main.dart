@@ -5,8 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/theme/app_theme.dart';
 import 'features/swipe/presentation/swipe_screen.dart';
 import 'features/monetization/services/ad_service.dart';
-// import 'features/monetization/services/purchase_service.dart';
-import 'features/monetization/services/mock_purchase_service.dart'; // 開発中はモックを使用
+import 'features/monetization/services/purchase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,9 +38,9 @@ class _VibeQuestAppState extends ConsumerState<VibeQuestApp> {
   @override
   void initState() {
     super.initState();
-    // 課金サービスの初期化（開発中はモック使用）
+    // RevenueCatの初期化
     Future.microtask(() {
-      ref.read(mockPurchaseServiceProvider.notifier).initialize();
+      ref.read(purchaseServiceProvider.notifier).initialize();
     });
   }
 
