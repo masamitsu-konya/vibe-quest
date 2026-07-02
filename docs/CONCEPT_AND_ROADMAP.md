@@ -29,14 +29,15 @@
 - 自己決定理論: 自律性 / 有能感 / 関係性（SDT ×3）
 - ikigai: 好き / 得意 / 世界が求める / お金になる（×4）
 - Big Five: 開放性 / 誠実性 / 外向性 / 協調性 / 神経症傾向（×5）
-- カテゴリ（health / career / hobby / learning / relationship / lifestyle / finance / creativity / sports / travel）
+- カテゴリ（health / career / hobby / learning / relationship / lifestyle / finance / creativity /
+  sports / travel / adventure / service / mindfulness / entertainment の 14 種）
 
-**プロファイルベクトル = 右スワイプした質問の 13 次元スコア平均 + カテゴリ親和度 10 次元**（計 23 次元）。
+**プロファイルベクトル = 右スワイプした質問の 13 次元スコア平均 + カテゴリ親和度 14 次元**（計 27 次元）。
 カテゴリ親和度は「そのカテゴリの質問に対する右スワイプ率」。
 左スワイプは分母として親和度に反映される（右だけでなく「何に共感しなかったか」も価値観）。
 
 **マッチング類似度 = プロファイルベクトル同士のコサイン類似度**。
-23 次元なので pgvector は不要、SQL 関数（RPC）で十分。
+27 次元なので pgvector は不要、SQL 関数（RPC）で十分。
 
 ## アーキテクチャ決定
 

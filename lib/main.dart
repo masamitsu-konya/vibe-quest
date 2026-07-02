@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme.dart';
+import 'features/swipe/data/response_repository.dart';
 import 'features/swipe/presentation/swipe_screen.dart';
 import 'features/monetization/services/ad_service.dart';
 import 'features/monetization/services/purchase_service.dart';
@@ -19,6 +21,9 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
+  // ローカル永続化の初期化
+  final prefs = await SharedPreferences.getInstance();
+
   // AdMobの初期化
   await AdService.instance.initialize();
 
@@ -26,8 +31,11 @@ void main() async {
   await _configureRevenueCat();
 
   runApp(
-    const ProviderScope(
-      child: VibeQuestApp(),
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const VibeQuestApp(),
     ),
   );
 }

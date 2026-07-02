@@ -21463,10 +21463,23 @@ class QuestionsData {
     'travel': '✈️',
   };
 
+  /// ID → Question のルックアップマップ（初回アクセス時に構築）
+  static final Map<String, Question> questionById = {
+    for (final q in allQuestions) q.id: q,
+  };
+
   /// ランダムに質問を取得
-  static List<Question> getRandomQuestions(int count) {
-    final shuffled = List<Question>.from(allQuestions)..shuffle();
-    return shuffled.take(count).toList();
+  ///
+  /// [excludeIds] に含まれる質問（回答済み等）は除外する。
+  static List<Question> getRandomQuestions(
+    int count, {
+    Set<String> excludeIds = const {},
+  }) {
+    final candidates = excludeIds.isEmpty
+        ? List<Question>.from(allQuestions)
+        : allQuestions.where((q) => !excludeIds.contains(q.id)).toList();
+    candidates.shuffle();
+    return candidates.take(count).toList();
   }
 
   /// カテゴリごとに質問を取得
