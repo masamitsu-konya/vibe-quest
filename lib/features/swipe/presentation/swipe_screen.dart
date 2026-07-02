@@ -10,6 +10,7 @@ import '../../../shared/widgets/swipeable_card.dart';
 import '../../../data/questions_data.dart';
 import '../../analysis/personality_analyzer.dart';
 import '../../actions/presentation/action_recommendations_view.dart';
+import '../../matching/presentation/matching_home_screen.dart';
 import '../../monetization/services/ad_service.dart';
 import '../../monetization/services/purchase_service.dart';
 import '../../profile/presentation/values_profile_screen.dart';
@@ -584,6 +585,18 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
                         ),
                         Row(
                           children: [
+                            IconButton(
+                              icon: const Icon(Icons.favorite_border),
+                              tooltip: '価値観マッチング',
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const MatchingHomeScreen(),
+                                  ),
+                                );
+                              },
+                            ),
                             IconButton(
                               icon: const Icon(Icons.person_outline),
                               tooltip: '価値観プロファイル',

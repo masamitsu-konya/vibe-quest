@@ -10,22 +10,26 @@ final purchaseServiceProvider = StateNotifierProvider<PurchaseService, PurchaseS
 /// 課金状態
 class PurchaseState {
   final bool isPremium;
+  final bool isMatchingSubscriber;
   final bool isLoading;
   final String? error;
 
   const PurchaseState({
     this.isPremium = false,
+    this.isMatchingSubscriber = false,
     this.isLoading = false,
     this.error,
   });
 
   PurchaseState copyWith({
     bool? isPremium,
+    bool? isMatchingSubscriber,
     bool? isLoading,
     String? error,
   }) {
     return PurchaseState(
       isPremium: isPremium ?? this.isPremium,
+      isMatchingSubscriber: isMatchingSubscriber ?? this.isMatchingSubscriber,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
     );
@@ -33,8 +37,16 @@ class PurchaseState {
 }
 
 /// 課金サービス
+///
+/// 2つの entitlement を扱う:
+/// - premium: ¥200 買い切り。広告除去
+/// - matching: 月額サブスクリプション。価値観マッチング解放
 class PurchaseService extends StateNotifier<PurchaseState> {
   static const String _entitlementId = 'premium';
+  static const String _matchingEntitlementId = 'matching';
+
+  /// マッチングサブスク用の RevenueCat Offering 識別子
+  static const String matchingOfferingId = 'matching';
 
   PurchaseService() : super(const PurchaseState());
 
@@ -42,10 +54,12 @@ class PurchaseService extends StateNotifier<PurchaseState> {
   Future<void> checkPurchaseStatus() async {
     try {
       final customerInfo = await Purchases.getCustomerInfo();
-      final isPremium = customerInfo.entitlements.active.containsKey(_entitlementId);
 
       state = state.copyWith(
-        isPremium: isPremium,
+        isPremium:
+            customerInfo.entitlements.active.containsKey(_entitlementId),
+        isMatchingSubscriber: customerInfo.entitlements.active
+            .containsKey(_matchingEntitlementId),
         isLoading: false,
       );
     } catch (e) {
@@ -53,6 +67,66 @@ class PurchaseService extends StateNotifier<PurchaseState> {
         isLoading: false,
         error: e.toString(),
       );
+    }
+  }
+
+  /// マッチング月額サブスクリプションの購入
+  Future<bool> purchaseMatchingSubscription() async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final offerings = await Purchases.getOfferings();
+      final offering = offerings.getOffering(matchingOfferingId);
+
+      if (offering == null || offering.availablePackages.isEmpty) {
+        throw Exception('マッチングプランが見つかりません');
+      }
+
+      // 月額パッケージを探す
+      final package = offering.availablePackages.firstWhere(
+        (pkg) => pkg.packageType == PackageType.monthly,
+        orElse: () => offering.availablePackages.first,
+      );
+
+      final purchaseResult =
+          await Purchases.purchase(PurchaseParams.package(package));
+      final isSubscriber = purchaseResult.customerInfo.entitlements.active
+          .containsKey(_matchingEntitlementId);
+
+      state = state.copyWith(
+        isMatchingSubscriber: isSubscriber,
+        isLoading: false,
+      );
+
+      return isSubscriber;
+    } on PlatformException catch (e) {
+      if (e.code == PurchasesErrorCode.purchaseCancelledError.name) {
+        state = state.copyWith(isLoading: false, error: '購入がキャンセルされました');
+      } else {
+        state = state.copyWith(isLoading: false, error: e.message);
+      }
+      return false;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  /// マッチングプランの価格表示文字列を取得（例: ¥480/月）
+  Future<String?> matchingPriceString() async {
+    try {
+      final offerings = await Purchases.getOfferings();
+      final offering = offerings.getOffering(matchingOfferingId);
+      if (offering == null || offering.availablePackages.isEmpty) {
+        return null;
+      }
+      final package = offering.availablePackages.firstWhere(
+        (pkg) => pkg.packageType == PackageType.monthly,
+        orElse: () => offering.availablePackages.first,
+      );
+      return package.storeProduct.priceString;
+    } catch (e) {
+      return null;
     }
   }
 
@@ -76,7 +150,8 @@ class PurchaseService extends StateNotifier<PurchaseState> {
       );
 
       // 購入を実行
-      final purchaseResult = await Purchases.purchasePackage(package);
+      final purchaseResult =
+          await Purchases.purchase(PurchaseParams.package(package));
 
       // 購入成功 - PurchaseResultからCustomerInfoを取得
       final customerInfo = purchaseResult.customerInfo;
@@ -117,14 +192,18 @@ class PurchaseService extends StateNotifier<PurchaseState> {
 
     try {
       final customerInfo = await Purchases.restorePurchases();
-      final isPremium = customerInfo.entitlements.active.containsKey(_entitlementId);
+      final isPremium =
+          customerInfo.entitlements.active.containsKey(_entitlementId);
+      final isMatchingSubscriber = customerInfo.entitlements.active
+          .containsKey(_matchingEntitlementId);
 
       state = state.copyWith(
         isPremium: isPremium,
+        isMatchingSubscriber: isMatchingSubscriber,
         isLoading: false,
       );
 
-      if (!isPremium) {
+      if (!isPremium && !isMatchingSubscriber) {
         state = state.copyWith(
           error: '復元する購入が見つかりませんでした',
         );

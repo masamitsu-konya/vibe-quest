@@ -129,3 +129,37 @@ App Store Connect側：
 2. Xcodeでデバイス/シミュレータにインストール
 3. Sandboxアカウントでテスト購入
 4. RevenueCatダッシュボードで購入を確認
+---
+
+## マッチング月額サブスクリプションの設定（Phase 4 追加）
+
+マッチング機能は entitlement `matching` でゲートされている。以下を設定すると解放される。
+
+### 1. App Store Connect でサブスクリプションを作成
+
+1. 「App内課金」→「サブスクリプション」→ サブスクリプショングループ作成
+   - グループ参照名: `VibeQuest Matching`
+2. グループ内にサブスクリプションを作成:
+   - **参照名**: `Vibe Quest Matching Monthly`
+   - **製品ID**: `vibe_quest_matching_monthly`
+   - **期間**: 1ヶ月
+   - **価格**: ¥480（仮。まさみつが最終決定）
+   - **表示名**: `マッチングプラン`
+   - **説明**: `価値観の近い人とのマッチングとチャットが利用できます`
+
+### 2. RevenueCat 側の設定
+
+1. **Products**: `vibe_quest_matching_monthly` を追加（App Store 連携で自動取得可）
+2. **Entitlements**: 識別子 `matching` を新規作成し、上記 Product を紐付け
+3. **Offerings**: 識別子 `matching` の Offering を新規作成し、
+   Monthly パッケージ（`$rc_monthly`）として上記 Product を追加
+
+> アプリ側は `Offering: matching` → `PackageType.monthly` → `entitlement: matching`
+> の順で参照する（`purchase_service.dart`）。識別子はこの通りに作ること。
+
+### 3. ローカルテスト
+
+`ios/Runner/vibe_quest_premium_200.storekit` に
+`vibe_quest_matching_monthly`（P1M, ¥480）を追加済み。
+Xcode の Scheme > Run > Options > StoreKit Configuration で有効化すれば
+App Store Connect なしで購入フローをテストできる。

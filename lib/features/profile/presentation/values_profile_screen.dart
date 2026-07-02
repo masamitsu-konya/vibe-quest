@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../matching/presentation/matching_home_screen.dart';
 import '../../swipe/domain/responses_provider.dart';
 import '../constants/value_labels.dart';
 import '../models/values_profile.dart';
@@ -137,6 +138,22 @@ class _ProfileBody extends StatelessWidget {
               .bodySmall
               ?.copyWith(color: Colors.grey[500]),
           textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        ElevatedButton.icon(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const MatchingHomeScreen(),
+              ),
+            );
+          },
+          icon: const Icon(Icons.favorite),
+          label: const Text('この価値観で誰かと出会う'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          ),
         ),
         const SizedBox(height: AppSpacing.xl),
       ],
