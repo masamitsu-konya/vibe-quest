@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:appinio_swiper/appinio_swiper.dart';
@@ -12,6 +14,7 @@ import '../../monetization/services/ad_service.dart';
 import '../../monetization/services/purchase_service.dart';
 import '../../profile/presentation/values_profile_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
+import '../../sync/services/sync_service.dart';
 import '../domain/responses_provider.dart';
 
 class SwipeScreen extends ConsumerStatefulWidget {
@@ -673,6 +676,14 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
                                         ),
                                       );
                                   sessionSwipeCount++;
+
+                                  // 未同期分が溜まっていればサーバー同期（best-effort）
+                                  unawaited(
+                                    ref.read(syncServiceProvider).maybeSync(
+                                          ref.read(responsesProvider),
+                                          ref.read(valuesProfileProvider),
+                                        ),
+                                  );
 
                                   // プレミアムユーザーでない場合は20問ごとに広告表示
                                   final isPremium = ref.read(purchaseServiceProvider).isPremium;
