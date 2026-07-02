@@ -1,6 +1,5 @@
 import '../../shared/models/question.dart';
 import 'models/personality_type.dart';
-import 'models/enhanced_models.dart';
 import 'constants/personality_constants.dart';
 import 'services/category_analyzer.dart';
 import 'services/motivation_analyzer.dart';
@@ -64,7 +63,6 @@ class EnhancedPersonalityAnalyzer {
   ) {
     final openness = big5Scores['openness']!;
     final conscientiousness = big5Scores['conscientiousness']!;
-    final extraversion = big5Scores['extraversion']!;
     final agreeableness = big5Scores['agreeableness']!;
 
     final autonomy = sdtScores['autonomy']!;

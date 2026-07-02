@@ -8,11 +8,11 @@ class SwipeableCard extends StatelessWidget {
   final VoidCallback? onSwipeRight;
 
   const SwipeableCard({
-    Key? key,
+    super.key,
     required this.question,
     this.onSwipeLeft,
     this.onSwipeRight,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,14 +34,14 @@ class SwipeableCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            theme.colorScheme.primary.withOpacity(0.9),
-            theme.colorScheme.secondary.withOpacity(0.9),
+            theme.colorScheme.primary.withValues(alpha: 0.9),
+            theme.colorScheme.secondary.withValues(alpha: 0.9),
           ],
         ),
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.3),
+            color: theme.colorScheme.primary.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -77,7 +77,7 @@ class SwipeableCard extends StatelessWidget {
                   children: question.tags.map((tag) => Text(
                     '#$tag',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.95),
+                      color: Colors.white.withValues(alpha: 0.95),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),

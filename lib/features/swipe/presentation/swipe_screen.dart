@@ -505,7 +505,7 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -540,7 +540,7 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
           const SizedBox(height: AppSpacing.xs),
           LinearProgressIndicator(
             value: progress,
-            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             valueColor: AlwaysStoppedAnimation<Color>(
               answeredCount < analysisThreshold
                   ? Theme.of(context).colorScheme.primary
@@ -561,8 +561,8 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
             ],
           ),
         ),
@@ -755,14 +755,14 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
                                     Container(
                                       padding: const EdgeInsets.all(AppSpacing.md),
                                       decoration: BoxDecoration(
-                                        color: Colors.red.withOpacity(
+                                        color: Colors.red.withValues(alpha: 
                                           0.1 + (!isSwipingRight && swipeProgress > 0 ? swipeProgress * 0.2 : 0)
                                         ),
                                         shape: BoxShape.circle,
                                         boxShadow: !isSwipingRight && swipeProgress > 0
                                             ? [
                                                 BoxShadow(
-                                                  color: Colors.red.withOpacity(0.3 * swipeProgress),
+                                                  color: Colors.red.withValues(alpha: 0.3 * swipeProgress),
                                                   blurRadius: 10 * swipeProgress,
                                                   spreadRadius: 2 * swipeProgress,
                                                 )
@@ -815,14 +815,14 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
                                     Container(
                                       padding: const EdgeInsets.all(AppSpacing.md),
                                       decoration: BoxDecoration(
-                                        color: Colors.green.withOpacity(
+                                        color: Colors.green.withValues(alpha: 
                                           0.1 + (isSwipingRight && swipeProgress > 0 ? swipeProgress * 0.2 : 0)
                                         ),
                                         shape: BoxShape.circle,
                                         boxShadow: isSwipingRight && swipeProgress > 0
                                             ? [
                                                 BoxShadow(
-                                                  color: Colors.green.withOpacity(0.3 * swipeProgress),
+                                                  color: Colors.green.withValues(alpha: 0.3 * swipeProgress),
                                                   blurRadius: 10 * swipeProgress,
                                                   spreadRadius: 2 * swipeProgress,
                                                 )

@@ -121,8 +121,6 @@ class InsightGenerator {
     final insights = <String>[];
     final openness = big5Scores['openness']!;
     final conscientiousness = big5Scores['conscientiousness']!;
-    final extraversion = big5Scores['extraversion']!;
-    final agreeableness = big5Scores['agreeableness']!;
     final neuroticism = big5Scores['neuroticism']!;
 
     // 複合パターン
