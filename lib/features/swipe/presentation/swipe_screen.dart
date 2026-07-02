@@ -9,6 +9,7 @@ import '../../analysis/personality_analyzer.dart';
 import '../../actions/presentation/action_recommendations_view.dart';
 import '../../monetization/services/ad_service.dart';
 import '../../monetization/services/purchase_service.dart';
+import '../../settings/presentation/settings_screen.dart';
 
 class SwipeScreen extends ConsumerStatefulWidget {
   const SwipeScreen({super.key});
@@ -547,9 +548,24 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
                             color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.info_outline),
-                          onPressed: () => _showInstructions(),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.settings),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SettingsScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.info_outline),
+                              onPressed: () => _showInstructions(),
+                            ),
+                          ],
                         ),
                       ],
                     ),

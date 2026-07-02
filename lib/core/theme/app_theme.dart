@@ -50,10 +50,10 @@ class AppTheme {
         ),
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: const CardThemeData(
       elevation: 8,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.all(Radius.circular(20)),
       ),
     ),
   );
@@ -102,10 +102,10 @@ class AppTheme {
         ),
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: const CardThemeData(
       elevation: 8,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.all(Radius.circular(20)),
       ),
     ),
   );
