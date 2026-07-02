@@ -672,13 +672,16 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
                                 setState(() {
                                   swipeProgress = 0.0;
                                 });
+                                // キャンセル・巻き戻し等は回答として扱わない
+                                // （閾値未満で戻したドラッグが「ワクワクしない」として
+                                //   記録される誤答を防ぐ）
+                                if (activity is! Swipe) {
+                                  return;
+                                }
                                 if (previousIndex < questions.length) {
                                   final question = questions[previousIndex];
-                                  // Swipeアクティビティの場合、directionを確認
-                                  bool isExcited = false;
-                                  if (activity is Swipe) {
-                                    isExcited = activity.direction == AxisDirection.right;
-                                  }
+                                  final isExcited =
+                                      activity.direction == AxisDirection.right;
 
                                   // 回答を記録・永続化
                                   ref.read(responsesProvider.notifier).add(
