@@ -37,6 +37,31 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           ),
+          const SizedBox(height: 8),
+
+          // マッチングサブスクリプション状態の表示
+          Card(
+            child: ListTile(
+              leading: Icon(
+                purchaseState.isMatchingSubscriber
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+                color:
+                    purchaseState.isMatchingSubscriber ? Colors.pink : null,
+              ),
+              title: Text(
+                purchaseState.isMatchingSubscriber
+                    ? 'マッチングプラン加入中'
+                    : 'マッチングプラン未加入',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                purchaseState.isMatchingSubscriber
+                    ? '価値観マッチングとチャットが利用可能'
+                    : 'マッチング画面から加入できます',
+              ),
+            ),
+          ),
           const SizedBox(height: 16),
 
           // 購入ボタン

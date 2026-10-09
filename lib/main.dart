@@ -1,13 +1,18 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme.dart';
+import 'features/swipe/data/response_repository.dart';
+import 'features/swipe/domain/responses_provider.dart';
 import 'features/swipe/presentation/swipe_screen.dart';
 import 'features/monetization/services/ad_service.dart';
 import 'features/monetization/services/purchase_service.dart';
+import 'features/sync/services/sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +24,9 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
+  // ローカル永続化の初期化
+  final prefs = await SharedPreferences.getInstance();
+
   // AdMobの初期化
   await AdService.instance.initialize();
 
@@ -26,8 +34,11 @@ void main() async {
   await _configureRevenueCat();
 
   runApp(
-    const ProviderScope(
-      child: VibeQuestApp(),
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const VibeQuestApp(),
     ),
   );
 }
@@ -72,9 +83,18 @@ class _VibeQuestAppState extends ConsumerState<VibeQuestApp> {
   @override
   void initState() {
     super.initState();
-    // 課金状態の確認
     Future.microtask(() {
+      // 課金状態の確認
       ref.read(purchaseServiceProvider.notifier).checkPurchaseStatus();
+
+      // 匿名サインイン + 未同期回答のサーバー同期（best-effort）
+      unawaited(
+        ref.read(syncServiceProvider).maybeSync(
+              ref.read(responsesProvider),
+              ref.read(valuesProfileProvider),
+              force: true,
+            ),
+      );
     });
   }
 
