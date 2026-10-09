@@ -1,11 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:appinio_swiper/appinio_swiper.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/models/question.dart';
+import '../../../shared/models/swipe_response.dart';
 import '../../../shared/widgets/swipeable_card.dart';
 import '../../../data/questions_data.dart';
 import '../../analysis/personality_analyzer.dart';
+import '../../actions/presentation/action_recommendations_view.dart';
+import '../../matching/presentation/matching_home_screen.dart';
+import '../../monetization/services/ad_service.dart';
+import '../../monetization/services/purchase_service.dart';
+import '../../profile/presentation/values_profile_screen.dart';
+import '../../settings/presentation/settings_screen.dart';
+import '../../sync/services/sync_service.dart';
+import '../domain/responses_provider.dart';
 
 class SwipeScreen extends ConsumerStatefulWidget {
   const SwipeScreen({super.key});
@@ -17,12 +28,18 @@ class SwipeScreen extends ConsumerStatefulWidget {
 class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProviderStateMixin {
   final AppinioSwiperController controller = AppinioSwiperController();
   List<Question> questions = [];
-  List<Map<String, dynamic>> responses = [];
   bool isLoading = true;
+
+  // このセッションでスワイプした数（カード山の残数管理用。
+  // 全回答数は responsesProvider が永続化込みで保持する）
+  int sessionSwipeCount = 0;
 
   // スワイプ進捗を管理する変数
   double swipeProgress = 0.0;
   bool isSwipingRight = false;
+
+  // 分析トリガー関連
+  static const int analysisThreshold = 50; // 50個ごとに分析
 
   @override
   void initState() {
@@ -32,8 +49,13 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
 
   Future<void> _loadQuestions({bool append = false}) async {
     try {
-      // アプリ内データからランダムに50問取得
-      final questionsList = QuestionsData.getRandomQuestions(50);
+      // 回答済み + 現在の山にある質問を除外してランダムに50問取得
+      final excludeIds = {
+        ...ref.read(responsesProvider.notifier).answeredQuestionIds,
+        ...questions.map((q) => q.id),
+      };
+      final questionsList =
+          QuestionsData.getRandomQuestions(50, excludeIds: excludeIds);
 
       setState(() {
         if (append) {
@@ -45,9 +67,8 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
         }
         isLoading = false;
       });
-    } catch (e, stackTrace) {
-      print('Error loading questions: $e');
-      print('Stack trace: $stackTrace');
+    } catch (e) {
+      // エラーログは本番環境では表示しない
 
       setState(() {
         isLoading = false;
@@ -67,6 +88,14 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
 
 
   void _showResults() {
+    final answeredCount = ref.read(responsesProvider).length;
+
+    // プレミアムユーザーでない場合は広告を表示
+    final isPremium = ref.read(purchaseServiceProvider).isPremium;
+    if (!isPremium) {
+      AdService.instance.onBeforeShowingAnalysis();
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -101,16 +130,23 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
-                        '回答数: ${responses.length}個',
+                        '回答数: $answeredCount個',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.grey[600],
                         ),
                       ),
-                      if (responses.length < 30)
+                      if (answeredCount < analysisThreshold)
+                        Text(
+                          '※最低$analysisThreshold個の回答で分析が開始されます',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      if (answeredCount >= analysisThreshold && answeredCount < 100)
                         Text(
                           '※回答が増えるほど分析精度が向上します',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
+                            color: Theme.of(context).colorScheme.secondary,
                           ),
                         ),
                       const SizedBox(height: AppSpacing.lg),
@@ -120,8 +156,8 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
                   ),
                 ),
               ),
-              // 回答数に応じてボタンを表示
-              if (responses.length < questions.length)
+              // カードの山が残っていれば続行ボタンを表示
+              if (sessionSwipeCount < questions.length)
                 Column(
                   children: [
                     const SizedBox(height: AppSpacing.md),  // ボタン上部に16pxのマージン追加
@@ -144,13 +180,41 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
     );
   }
 
+  /// 永続化された回答を PersonalityAnalyzer が期待する形式に変換する
+  ///
+  /// 質問データの改訂で消えた questionId の回答は除外する。
+  List<Map<String, dynamic>> _analysisResponses() {
+    return ref
+        .read(responsesProvider)
+        .where((r) => QuestionsData.questionById.containsKey(r.questionId))
+        .map((r) => {
+              'question': QuestionsData.questionById[r.questionId]!,
+              'is_excited': r.isExcited,
+              'timestamp': r.timestamp,
+            })
+        .toList();
+  }
+
   Widget _buildAnalysisResults() {
+    // 永続化された回答を分析用の形式に変換
+    final responses = _analysisResponses();
+
     // PersonalityAnalyzerを使用して深い分析を実行
     final analysisResult = PersonalityAnalyzer.analyze(responses);
     final personalityType = PersonalityAnalyzer.personalityTypes[analysisResult.personalityType];
 
     return Column(
       children: [
+        // 50個以上回答した場合は行動提案を表示
+        if (responses.length >= analysisThreshold) ...[
+          ActionRecommendationsView(
+            analysisResult: analysisResult,
+            responses: responses,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          const Divider(),
+          const SizedBox(height: AppSpacing.lg),
+        ],
         // パーソナリティタイプカード
         Card(
           color: Theme.of(context).colorScheme.primaryContainer,
@@ -395,21 +459,6 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
     );
   }
 
-  String _getCategoryLabel(String category) {
-    switch (category) {
-      case 'health': return '健康・フィットネス';
-      case 'career': return 'キャリア・仕事';
-      case 'hobby': return '趣味・娯楽';
-      case 'learning': return '学習・自己啓発';
-      case 'relationship': return '人間関係';
-      case 'lifestyle': return 'ライフスタイル';
-      case 'finance': return '金融・投資';
-      case 'creativity': return 'クリエイティブ';
-      case 'sports': return 'スポーツ';
-      case 'travel': return '旅行・冒険';
-      default: return category;
-    }
-  }
 
   // スコアバーを表示するウィジェット
   Widget _buildScoreBar(String label, double score) {
@@ -442,6 +491,67 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
     );
   }
 
+  Widget _buildProgressBar() {
+    final answeredCount = ref.watch(responsesProvider).length;
+    final nextAnalysis = ((answeredCount ~/ analysisThreshold) + 1) * analysisThreshold;
+    final progress = (answeredCount % analysisThreshold) / analysisThreshold;
+    final remaining = nextAnalysis - answeredCount;
+
+    return Container(
+      margin: const EdgeInsets.only(top: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '回答数: $answeredCount',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              if (answeredCount < analysisThreshold)
+                Text(
+                  '初回分析まであと$remaining個',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              else
+                Text(
+                  '次の分析まであと$remaining個',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          LinearProgressIndicator(
+            value: progress,
+            backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              answeredCount < analysisThreshold
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.secondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -451,8 +561,8 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
             ],
           ),
         ),
@@ -461,20 +571,66 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
             children: [
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
                   children: [
-                    Text(
-                      'Vibe Quest',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Vibe Quest',
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.favorite_border),
+                              tooltip: '価値観マッチング',
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const MatchingHomeScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.person_outline),
+                              tooltip: '価値観プロファイル',
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const ValuesProfileScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.settings),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SettingsScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.info_outline),
+                              onPressed: () => _showInstructions(),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.info_outline),
-                      onPressed: () => _showInstructions(),
-                    ),
+                    // プログレスバー
+                    if (!isLoading && questions.isNotEmpty)
+                      _buildProgressBar(),
                   ],
                 ),
               ),
@@ -516,28 +672,50 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
                                 setState(() {
                                   swipeProgress = 0.0;
                                 });
+                                // キャンセル・巻き戻し等は回答として扱わない
+                                // （閾値未満で戻したドラッグが「ワクワクしない」として
+                                //   記録される誤答を防ぐ）
+                                if (activity is! Swipe) {
+                                  return;
+                                }
                                 if (previousIndex < questions.length) {
                                   final question = questions[previousIndex];
-                                  // Swipeアクティビティの場合、directionを確認
-                                  bool isExcited = false;
-                                  if (activity is Swipe) {
-                                    isExcited = activity.direction == AxisDirection.right;
+                                  final isExcited =
+                                      activity.direction == AxisDirection.right;
+
+                                  // 回答を記録・永続化
+                                  ref.read(responsesProvider.notifier).add(
+                                        SwipeResponse(
+                                          questionId: question.id,
+                                          isExcited: isExcited,
+                                          timestamp: DateTime.now(),
+                                        ),
+                                      );
+                                  sessionSwipeCount++;
+
+                                  // 未同期分が溜まっていればサーバー同期（best-effort）
+                                  unawaited(
+                                    ref.read(syncServiceProvider).maybeSync(
+                                          ref.read(responsesProvider),
+                                          ref.read(valuesProfileProvider),
+                                        ),
+                                  );
+
+                                  // プレミアムユーザーでない場合は20問ごとに広告表示
+                                  final isPremium = ref.read(purchaseServiceProvider).isPremium;
+                                  if (!isPremium) {
+                                    AdService.instance.onQuestionAnswered();
                                   }
 
-                                  responses.add({
-                                    'question': question,
-                                    'is_excited': isExcited,
-                                    'timestamp': DateTime.now(),
-                                  });
-
-                                  // 残り10問になったら次の50問を自動取得
-                                  final remainingQuestions = questions.length - responses.length;
+                                  // 山の残りが10問になったら次の50問を自動取得
+                                  final remainingQuestions = questions.length - sessionSwipeCount;
                                   if (remainingQuestions == 10 && !isLoading) {
                                     _loadQuestions(append: true);
                                   }
 
-                                  // 10個スワイプするごと、または全てのカードをスワイプしたら結果を表示
-                                  if (responses.length % 10 == 0 || targetIndex >= questions.length) {
+                                  // 通算回答数が50の倍数に達したら分析結果を表示
+                                  final totalAnswered = ref.read(responsesProvider).length;
+                                  if (totalAnswered >= analysisThreshold && totalAnswered % analysisThreshold == 0) {
                                     Future.delayed(const Duration(milliseconds: 300), () {
                                       _showResults();
                                     });
@@ -580,14 +758,14 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
                                     Container(
                                       padding: const EdgeInsets.all(AppSpacing.md),
                                       decoration: BoxDecoration(
-                                        color: Colors.red.withOpacity(
+                                        color: Colors.red.withValues(alpha: 
                                           0.1 + (!isSwipingRight && swipeProgress > 0 ? swipeProgress * 0.2 : 0)
                                         ),
                                         shape: BoxShape.circle,
                                         boxShadow: !isSwipingRight && swipeProgress > 0
                                             ? [
                                                 BoxShadow(
-                                                  color: Colors.red.withOpacity(0.3 * swipeProgress),
+                                                  color: Colors.red.withValues(alpha: 0.3 * swipeProgress),
                                                   blurRadius: 10 * swipeProgress,
                                                   spreadRadius: 2 * swipeProgress,
                                                 )
@@ -640,14 +818,14 @@ class _SwipeScreenState extends ConsumerState<SwipeScreen> with SingleTickerProv
                                     Container(
                                       padding: const EdgeInsets.all(AppSpacing.md),
                                       decoration: BoxDecoration(
-                                        color: Colors.green.withOpacity(
+                                        color: Colors.green.withValues(alpha: 
                                           0.1 + (isSwipingRight && swipeProgress > 0 ? swipeProgress * 0.2 : 0)
                                         ),
                                         shape: BoxShape.circle,
                                         boxShadow: isSwipingRight && swipeProgress > 0
                                             ? [
                                                 BoxShadow(
-                                                  color: Colors.green.withOpacity(0.3 * swipeProgress),
+                                                  color: Colors.green.withValues(alpha: 0.3 * swipeProgress),
                                                   blurRadius: 10 * swipeProgress,
                                                   spreadRadius: 2 * swipeProgress,
                                                 )

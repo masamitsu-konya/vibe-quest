@@ -1,4 +1,4 @@
-/// 拡張分析用のモデル定義
+// 拡張分析用のモデル定義
 
 class CategoryAnalysis {
   final String category;

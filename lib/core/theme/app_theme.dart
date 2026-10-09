@@ -6,7 +6,6 @@ class AppTheme {
   static const _secondaryColor = Color(0xFFFF6B9D);
   static const _tertiaryColor = Color(0xFFFECA57);
   static const _errorColor = Color(0xFFEE5A6F);
-  static const _successColor = Color(0xFF48DBFB);
 
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
@@ -50,10 +49,10 @@ class AppTheme {
         ),
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: const CardThemeData(
       elevation: 8,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.all(Radius.circular(20)),
       ),
     ),
   );
@@ -102,10 +101,10 @@ class AppTheme {
         ),
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: const CardThemeData(
       elevation: 8,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.all(Radius.circular(20)),
       ),
     ),
   );

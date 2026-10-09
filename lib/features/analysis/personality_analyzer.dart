@@ -1,6 +1,5 @@
 import '../../shared/models/question.dart';
 import 'models/analysis_result.dart';
-import 'models/personality_type.dart';
 import 'constants/personality_constants.dart';
 import 'services/score_calculator.dart';
 import 'services/personality_determiner.dart';

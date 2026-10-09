@@ -1,0 +1,90 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "1515C67D",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "200",
+      "familyShareable" : false,
+      "internalID" : "6752816675",
+      "localizations" : [
+        {
+          "description" : "広告を非表示にし、分析結果のエクスポート機能を利用できます",
+          "displayName" : "プレミアムアップグレード",
+          "locale" : "ja"
+        }
+      ],
+      "productID" : "vibe_quest_premium_200",
+      "referenceName" : "Vibe Quest Premium",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6752712879",
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_developerTeamID" : "R6RJDSL93Q",
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 780304815.24246299,
+    "_locale" : "ja",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "JPN",
+    "_storeKitErrors" : [
+
+    ],
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21700001",
+      "localizations" : [
+
+      ],
+      "name" : "VibeQuest Matching",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "480",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6752816680",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "価値観の近い人とのマッチングとチャットが利用できます",
+              "displayName" : "マッチングプラン",
+              "locale" : "ja"
+            }
+          ],
+          "productID" : "vibe_quest_matching_monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Vibe Quest Matching Monthly",
+          "subscriptionGroupID" : "21700001",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
